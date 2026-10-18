@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzePunch, bestResult, peakSpeed } from '../js/modules/analysis.js';
+import { analyzePunch, bestResults, peakSpeed, smoothedPeak } from '../js/modules/analysis.js';
 
 const STEP_MS = 1000 / 60; // typical phone sensor rate
 
@@ -24,7 +24,7 @@ function punchProfile(t) {
   return 0;
 }
 
-test('measures reaction, peak acceleration, speed and duration of a punch', () => {
+test('measures reaction, out-and-back time, peak acceleration and speed of a punch', () => {
   const samples = makeSamples(0, 2500, punchProfile);
   const result = analyzePunch(samples, 1000);
 
@@ -34,7 +34,7 @@ test('measures reaction, peak acceleration, speed and duration of a punch', () =
   // At 60 Hz, one sample of 20 m/s² is worth ~0.33 m/s: that is the expected precision.
   const sampleError = (20 * STEP_MS) / 1000;
   assert.ok(Math.abs(result.peakSpeed - 2) < sampleError + 0.1, `speed ${result.peakSpeed}`);
-  assert.ok(Math.abs(result.durationMs - 400) <= 2 * STEP_MS, `duration ${result.durationMs}`);
+  assert.ok(Math.abs(result.movementMs - 400) <= 2 * STEP_MS, `movement ${result.movementMs}`);
 });
 
 test('flags a movement before the signal as a false start', () => {
@@ -54,19 +54,24 @@ test('ignores small hand tremor below the movement threshold', () => {
   assert.ok(Math.abs(result.reactionMs - 200) <= STEP_MS);
 });
 
-test('peakSpeed integrates constant acceleration', () => {
-  const samples = makeSamples(0, 500, () => 10);
-  assert.ok(Math.abs(peakSpeed(samples) - 5) < 0.2);
+test('peakSpeed integrates an accelerate-then-brake movement', () => {
+  const samples = makeSamples(0, 500, (t) => (t < 250 ? 10 : -10));
+  assert.ok(Math.abs(peakSpeed(samples) - 2.5) < 0.2, `speed ${peakSpeed(samples)}`);
 });
 
-test('bestResult keeps the strongest valid repetition', () => {
+test('bestResults keeps the best value of each metric among valid repetitions', () => {
   const results = [
-    { status: 'ok', peakAccel: 15 },
+    { status: 'ok', reactionMs: 250, movementMs: 380, peakAccel: 15, peakSpeed: 3 },
     { status: 'false-start' },
-    { status: 'ok', peakAccel: 22 },
+    { status: 'ok', reactionMs: 210, movementMs: 420, peakAccel: 22, peakSpeed: 2.5 },
   ];
-  assert.equal(bestResult(results).peakAccel, 22);
-  assert.equal(bestResult([{ status: 'no-movement' }]), null);
+  assert.deepEqual(bestResults(results), {
+    reactionMs: 210,
+    movementMs: 380,
+    peakAccel: 22,
+    peakSpeed: 3,
+  });
+  assert.equal(bestResults([{ status: 'no-movement' }]), null);
 });
 
 test('flags a slow start just before the signal as a false start', () => {
@@ -88,9 +93,52 @@ test('measures the onset of a movement that ramps up slowly', () => {
   assert.ok(result.reactionMs < 220, `reaction ${result.reactionMs}`);
 });
 
-test('ends the movement at the last sample when the hand never comes back to rest', () => {
+test('rejects a repetition where the hand never holds still back in guard', () => {
   const samples = makeSamples(0, 2000, (t) => (t >= 1200 ? 8 : 0));
-  const result = analyzePunch(samples, 1000);
+  assert.deepEqual(analyzePunch(samples, 1000), { status: 'no-return' });
+});
+
+test('removes sensor drift: a constant bias does not change the speed', () => {
+  const clean = analyzePunch(makeSamples(0, 2500, punchProfile), 1000);
+  const biased = analyzePunch(makeSamples(0, 2500, (t) => punchProfile(t) + 1.2), 1000);
+  assert.equal(biased.status, 'ok');
+  assert.ok(Math.abs(biased.peakSpeed - clean.peakSpeed) < 0.05, `${biased.peakSpeed} vs ${clean.peakSpeed}`);
+});
+
+test('keeps the speed right when the wrist turns during the punch', () => {
+  // Phone spins half a turn around z in 0.5 s while the fist accelerates then brakes along a fixed direction.
+  const turnRate = Math.PI * 2; // rad/s
+  const samples = [];
+  for (let t = 0; t <= 500; t += STEP_MS) {
+    const world = t < 250 ? 10 : -10;
+    const angle = (turnRate * t) / 1000;
+    samples.push({ t, x: world * Math.cos(angle), y: -world * Math.sin(angle), z: 0, rx: 0, ry: 0, rz: turnRate });
+  }
+  const sampleError = (20 * STEP_MS) / 1000;
+  assert.ok(Math.abs(peakSpeed(samples) - 2.5) < sampleError, `speed ${peakSpeed(samples)}`);
+
+  const withoutGyro = samples.map((s) => ({ ...s, rz: 0 }));
+  assert.ok(Math.abs(peakSpeed(withoutGyro) - 2.5) > 0.5, 'ignoring the rotation gives a wrong speed');
+});
+
+test('smoothedPeak ignores a single-sample spike', () => {
+  assert.equal(smoothedPeak([1, 1, 30, 1, 1], 3), 32 / 3);
+  assert.equal(smoothedPeak([5, 6], 3), 5.5);
+});
+
+test('discards the speed when the drift is too large to trust it', () => {
+  // Out-and-back punch, but the "back" half is missing: the hand ends with a large leftover speed.
+  const truncated = (t) => (t >= 1200 && t < 1300 ? 20 : 0);
+  const result = analyzePunch(makeSamples(0, 2500, truncated), 1000);
   assert.equal(result.status, 'ok');
-  assert.ok(Math.abs(result.durationMs - (samples.at(-1).t - 1200)) <= STEP_MS);
+  assert.equal(result.peakSpeed, null);
+});
+
+test('does not count the hand as still while the wrist is still turning', () => {
+  const samples = makeSamples(0, 2500, punchProfile).map((s) => ({
+    ...s,
+    rz: s.t >= 1200 && s.t < 1900 ? 3 : 0,
+  }));
+  const result = analyzePunch(samples, 1000);
+  assert.ok(Math.abs(result.movementMs - 700) <= 2 * STEP_MS, `movement ${result.movementMs}`);
 });

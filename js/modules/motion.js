@@ -3,6 +3,7 @@
 const SENSOR_CHECK_TIMEOUT_MS = 1500;
 const GRAVITY_FILTER = 0.98; // slow low-pass, used only when the device reports gravity-included data
 const MAX_CLOCK_GAP_MS = 1000;
+const DEG_TO_RAD = Math.PI / 180;
 
 export class MotionError extends Error {}
 
@@ -60,7 +61,16 @@ function toSample(event) {
   return null;
 }
 
-/** Records linear acceleration samples between start() and stop(). */
+// Rotation rate in rad/s around the phone x/y/z axes (the API gives deg/s as beta/gamma/alpha).
+export function rotationOf(event) {
+  const rate = event.rotationRate;
+  if (!rate || ![rate.alpha, rate.beta, rate.gamma].every(Number.isFinite)) {
+    return { rx: 0, ry: 0, rz: 0 };
+  }
+  return { rx: rate.beta * DEG_TO_RAD, ry: rate.gamma * DEG_TO_RAD, rz: rate.alpha * DEG_TO_RAD };
+}
+
+/** Records linear acceleration and rotation samples between start() and stop(). */
 export function createRecorder() {
   let samples = [];
   let gravity = null;
@@ -78,7 +88,7 @@ export function createRecorder() {
     const sample = toSample(event);
     if (!sample) return;
     const { t, x, y, z } = removeGravity(sample);
-    samples.push({ t, x, y, z });
+    samples.push({ t, x, y, z, ...rotationOf(event) });
   }
 
   return {

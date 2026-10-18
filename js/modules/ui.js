@@ -13,12 +13,16 @@ const STATUS_TEXT = {
 export function formatResult(result) {
   if (result.status === 'false-start') return { label: 'Faux départ' };
   if (result.status === 'no-movement') return { label: 'Pas de coup détecté' };
+  if (result.status === 'no-return') return { label: 'Pas revenu en garde immobile' };
+  return { label: null, ...formatMetrics(result) };
+}
+
+export function formatMetrics({ reactionMs, movementMs, peakAccel, peakSpeed }) {
   return {
-    label: null,
-    reaction: `${Math.round(result.reactionMs)} ms`,
-    accel: `${(result.peakAccel / GRAVITY).toFixed(1)} g`,
-    speed: `${result.peakSpeed.toFixed(1)} m/s`,
-    duration: `${Math.round(result.durationMs)} ms`,
+    reaction: `${Math.round(reactionMs)} ms`,
+    movement: `${Math.round(movementMs)} ms`,
+    accel: `${(peakAccel / GRAVITY).toFixed(1)} g`,
+    speed: peakSpeed === null ? '—' : `${peakSpeed.toFixed(1)} m/s`,
   };
 }
 
@@ -67,7 +71,7 @@ export function createUi(root) {
       const formatted = formatResult(result);
       const texts = formatted.label
         ? [formatted.label]
-        : [formatted.reaction, formatted.accel, formatted.speed, formatted.duration];
+        : [formatted.reaction, formatted.movement, formatted.accel, formatted.speed];
       for (const text of texts) {
         const cell = root.createElement('td');
         cell.textContent = text;
@@ -77,13 +81,14 @@ export function createUi(root) {
       elements.results.append(row);
     },
 
-    showBest(result) {
-      if (!result) {
+    showBest(best) {
+      if (!best) {
         elements.best.textContent = '';
         return;
       }
-      const { reaction, accel, speed } = formatResult(result);
-      elements.best.textContent = `Meilleur coup : ${accel} · ${speed} · réaction ${reaction}`;
+      const { reaction, movement, accel, speed } = formatMetrics(best);
+      elements.best.textContent =
+        `Records : réaction ${reaction} · aller-retour ${movement} · pic ${accel} · vitesse ${speed}`;
     },
   };
 }

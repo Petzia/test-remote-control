@@ -15,10 +15,12 @@
   <body>
     <main>
       <h1>Punch Meter</h1>
-      <p class="hint">
-        Tiens le téléphone fermement avec l'haltère. Un bip grave : prépare-toi. Un bip aigu :
-        frappe devant et ramène le poing.
-      </p>
+      <ol class="hint">
+        <li>Garde haute, téléphone serré dans le poing.</li>
+        <li>Bip grave : ne bouge plus.</li>
+        <li>Bip aigu : frappe et reviens en garde le plus vite possible.</li>
+        <li>Reste immobile en garde jusqu'au bip suivant.</li>
+      </ol>
 
       <section aria-live="assertive" class="status-box">
         <p id="status" class="status" data-state="idle"></p>
@@ -42,9 +44,9 @@
           <tr>
             <th scope="col">#</th>
             <th scope="col">Réaction</th>
+            <th scope="col">Aller-retour</th>
             <th scope="col">Pic</th>
             <th scope="col">Vitesse</th>
-            <th scope="col">Durée</th>
           </tr>
         </thead>
         <tbody></tbody>

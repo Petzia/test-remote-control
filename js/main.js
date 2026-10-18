@@ -1,4 +1,4 @@
-import { bestResult } from './modules/analysis.js';
+import { bestResults } from './modules/analysis.js';
 import { createBeeper } from './modules/audio.js';
 import { createRecorder, requestMotionPermission, MotionError } from './modules/motion.js';
 import { runSeries, SERIES_SETTINGS } from './modules/series.js';
@@ -32,7 +32,7 @@ function createApp(ui) {
         onResult: (result, rep) => {
           results.push(result);
           ui.addResult(result, rep);
-          ui.showBest(bestResult(results));
+          ui.showBest(bestResults(results));
         },
       });
       ui.setStatus('done');

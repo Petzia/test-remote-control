@@ -24,17 +24,36 @@ The user answered "no" to the challenge question: built directly, decisions logg
   delay, so the signal can't be anticipated. No voice, to stay light.
 - **Series of 5 repetitions**, run automatically so the user doesn't need to touch the
   screen between punches.
-- **Metrics**: reaction time, peak acceleration (in g), estimated peak speed (m/s),
-  out-and-back duration. Peak acceleration is used to pick the best punch because it is
-  measured directly and is the most reliable value.
+- **One repetition = one complete movement**: guard → punch → back still in guard. Only
+  the phone is held in the fist (no dumbbell).
+- **Metrics**: reaction time, out-and-back time, peak acceleration (in g, averaged over 3
+  samples to remove single-sample spikes) and estimated peak speed (m/s). The "Records"
+  line shows the best value of each metric, since each one measures something different.
+- **No return to guard → rejected**: if the hand never holds still after the punch, the
+  out-and-back time and speed can't be trusted, so the rep shows "Pas revenu en garde"
+  instead of misleading numbers.
 - **Detection thresholds**: movement starts above 4 m/s², the hand is "at rest" below
-  1.5 m/s² for 200 ms. The reaction time is measured from the moment the acceleration
+  1.5 m/s² **and** below 0.5 rad/s of rotation for 200 ms (low acceleration alone could
+  just mean a slow glide).
+- **Records**: the shortest out-and-back time wins, even if the punch was weaker. Each
+  record is independent; compare "Pic" and "Vitesse" for power. The reaction time is measured from the moment the acceleration
   first rises above the rest level (walking back from the 4 m/s² crossing).
 - **False start**: any movement above 4 m/s² between the "ready" beep (+0.5 s settle
   time) and the "go" beep, or a movement whose onset is less than 100 ms after the beep
   (faster than human reaction, so the beep was anticipated).
-- **Speed** is integrated from acceleration on each axis, starting from zero at the
-  onset. Drift is limited because the window is short (< 1 s), but it stays an estimate.
+- **Speed** is integrated from acceleration (trapezoidal rule) with two corrections:
+  - the wrist turns during a punch, so the phone axes turn too. The gyroscope
+    (`rotationRate`) is integrated into a quaternion to express every acceleration in the
+    fixed frame of the starting guard position (`js/modules/rotation.js`, ~40 lines, no
+    library needed);
+  - the hand is still at the start and at the end, so the final velocity must be zero:
+    the leftover is sensor drift and is removed linearly over the movement.
+  If the removed drift is larger than half the peak speed, the speed is shown as "—":
+  something went wrong (end of rep missed, sensor glitch) and the number would mislead.
+  It remains an estimate, best used to compare sessions.
+- **Known limits**: without a gyroscope (`rotationRate` missing) rotation compensation is
+  off. Phones that only report `accelerationIncludingGravity` use a phone-frame gravity
+  filter that leaks gravity when the wrist turns. Neither case happens on recent iPhones.
 - **Beep timing**: the beep is scheduled 50 ms ahead and its time is converted from the
   audio clock to the sensor clock with `getOutputTimestamp()`. Sensor events arrive at
   ~60 Hz, so timings have a resolution of about 17 ms.
