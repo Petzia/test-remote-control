@@ -43,6 +43,11 @@ h1 {
   font-size: 1.5rem;
 }
 
+.hint {
+  padding-left: 1.25rem;
+  line-height: 1.5;
+}
+
 .hint,
 .rep,
 caption {
@@ -118,6 +123,7 @@ caption {
 th,
 td {
   padding: 0.5rem 0.25rem;
+  font-size: 0.95rem;
   border-bottom: 1px solid var(--border);
   text-align: right;
 }
