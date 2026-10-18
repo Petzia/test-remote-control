@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>Punch Meter</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Punch Meter</h1>
+      <p class="hint">
+        Tiens le téléphone fermement avec l'haltère. Un bip grave : prépare-toi. Un bip aigu :
+        frappe devant et ramène le poing.
+      </p>
+
+      <section aria-live="assertive" class="status-box">
+        <p id="status" class="status" data-state="idle"></p>
+        <p id="rep" class="rep"></p>
+      </section>
+
+      <p id="message" class="message" role="alert" hidden></p>
+
+      <div class="actions">
+        <button id="start" type="button">Démarrer</button>
+        <button id="stop" type="button" class="secondary" hidden>Arrêter</button>
+      </div>
+
+      <p id="best" class="best" aria-live="polite"></p>
+
+      <table id="results">
+        <caption>
+          Résultats de la série
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Réaction</th>
+            <th scope="col">Pic</th>
+            <th scope="col">Vitesse</th>
+            <th scope="col">Durée</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </main>
+  </body>
+</html>

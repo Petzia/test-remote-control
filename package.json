@@ -1,0 +1,10 @@
+{
+  "name": "punch-meter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Measure punch reaction time and explosiveness with a phone accelerometer.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,127 @@
+:root {
+  --bg: #f7f7f8;
+  --fg: #16161a;
+  --muted: #5c5c66;
+  --accent: #0b6bcb;
+  --accent-fg: #ffffff;
+  --go: #c3261b;
+  --border: #d6d6dc;
+  --radius: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111114;
+    --fg: #f2f2f5;
+    --muted: #a6a6b0;
+    --accent: #4da3ff;
+    --accent-fg: #0a0a0c;
+    --go: #ff6b5e;
+    --border: #33333a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+main {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.hint,
+.rep,
+caption {
+  color: var(--muted);
+}
+
+.status-box {
+  margin: 1.5rem 0;
+  padding: 1.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.status {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.status[data-state='go'] {
+  color: var(--go);
+}
+
+.rep {
+  margin: 0.5rem 0 0;
+}
+
+.message {
+  color: var(--go);
+  font-weight: 600;
+}
+
+.actions button {
+  width: 100%;
+  padding: 1rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actions button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border: 2px solid var(--border);
+}
+
+button:focus-visible {
+  outline: 3px solid var(--fg);
+  outline-offset: 3px;
+}
+
+.best {
+  font-weight: 700;
+  min-height: 1.5em;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+caption {
+  text-align: left;
+  padding-bottom: 0.5rem;
+}
+
+th,
+td {
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+th:first-child {
+  text-align: left;
+}
